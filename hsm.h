@@ -21,12 +21,6 @@
 namespace hsm
 {
 
-// Helpers
-template <bool>
-class Bool
-{
-};
-
 template <typename THost>
 struct TopState
 {
@@ -139,27 +133,27 @@ struct Tran
     // method would require to specialize the inner
     // template without specializing the outer one,
     // which is forbidden.
-    static void exitActions(Host &, Bool<true>) {}
+    static void exitActions(Host &, std::true_type) {}
 
-    static void exitActions(Host &host, Bool<false>)
+    static void exitActions(Host &host, std::false_type)
     {
         TCurrent::exit(host);
-        Tran<CurrentBase, TSource, TTarget>::exitActions(host, Bool<exitStop>());
+        Tran<CurrentBase, TSource, TTarget>::exitActions(host, std::bool_constant<exitStop>());
     }
 
-    static void entryActions(Host &, Bool<true>) {}
+    static void entryActions(Host &, std::true_type) {}
 
-    static void entryActions(Host &host, Bool<false>)
+    static void entryActions(Host &host, std::false_type)
     {
-        Tran<CurrentBase, TSource, TTarget>::entryActions(host, Bool<entryStop>());
+        Tran<CurrentBase, TSource, TTarget>::entryActions(host, std::bool_constant<entryStop>());
         TCurrent::entry(host);
     }
 
-    Tran(Host &host) : host_{host} { exitActions(host_, Bool<false>()); }
+    Tran(Host &host) : host_{host} { exitActions(host_, std::bool_constant<false>()); }
 
     ~Tran()
     {
-        Tran<TTarget, TSource, TTarget>::entryActions(host_, Bool<false>());
+        Tran<TTarget, TSource, TTarget>::entryActions(host_, std::bool_constant<false>());
         TTarget::initial(host_);
     }
 
