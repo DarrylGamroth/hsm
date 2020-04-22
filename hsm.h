@@ -55,7 +55,7 @@ struct TopState
  * @tparam TBase base state
  */
 template <typename THost, unsigned id, typename TBase>
-struct CompState;
+struct CompositeState;
 
 /**
  * @brief Composite state class
@@ -65,12 +65,12 @@ struct CompState;
  * @tparam TBase base state
  */
 template <typename THost, unsigned id,
-          typename TBase = CompState<THost, 0, TopState<THost>>>
-struct CompState : TBase
+          typename TBase = CompositeState<THost, 0, TopState<THost>>>
+struct CompositeState : TBase
 {
     using Host = THost;
     using Base = TBase;
-    using This = CompState<Host, id, Base>;
+    using This = CompositeState<Host, id, Base>;
 
     /**
      * @brief Default event handler
@@ -114,11 +114,11 @@ struct CompState : TBase
  * @tparam THost
  */
 template <typename THost>
-struct CompState<THost, 0, TopState<THost>> : TopState<THost>
+struct CompositeState<THost, 0, TopState<THost>> : TopState<THost>
 {
     using Host = THost;
     using Base = TopState<Host>;
-    using This = CompState<Host, 0, Base>;
+    using This = CompositeState<Host, 0, Base>;
 
     /**
      * @brief Default event handler
@@ -161,7 +161,7 @@ struct CompState<THost, 0, TopState<THost>> : TopState<THost>
  * @tparam TBase base state
  */
 template <typename THost, unsigned id,
-          typename TBase = CompState<THost, 0, TopState<THost>>>
+          typename TBase = CompositeState<THost, 0, TopState<THost>>>
 struct LeafState : TBase
 {
     using Host = THost;
@@ -217,8 +217,8 @@ struct LeafState : TBase
      */
     static void exit(THost &host) {}
 
-    LeafState(LeafState const&) = delete;
-    LeafState& operator=(LeafState const&) = delete;
+    LeafState(LeafState const &) = delete;
+    LeafState &operator=(LeafState const &) = delete;
 
 private:
     LeafState() = default;
