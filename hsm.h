@@ -4,7 +4,7 @@
 // This code is from:
 // Yet Another Hierarchical State Machine
 // by Stefan Heinzmann
-// Overload issue 64 december 2004
+// Overload issue 64 December 2004
 // https://www.state-machine.com/doc/Heinzmann04.pdf
 
 /* This is a basic implementation of UML Statecharts.
@@ -21,94 +21,228 @@
 namespace hsm
 {
 
+/**
+ * @brief Abstract class for top level state
+ *
+ * @tparam THost host state machine class
+ */
 template <typename THost>
 struct TopState
 {
     using Host = THost;
     using Base = void;
 
-    virtual void handler(Host &) const = 0;
+    /**
+     * @brief Event handler
+     *
+     * @param host
+     */
+    virtual void handler(Host &host) const = 0;
+
+    /**
+     * @brief Get the Id object
+     *
+     * @return unsigned unique numerical id
+     */
     virtual unsigned getId() const = 0;
 };
 
+/**
+ * @brief Forward declaration of Composite state
+ *
+ * @tparam THost host state machine class
+ * @tparam id unique numerical id
+ * @tparam TBase base state
+ */
 template <typename THost, unsigned id, typename TBase>
 struct CompState;
 
+/**
+ * @brief Composite state class
+ *
+ * @tparam THost host state machine class
+ * @tparam id unique numerical id
+ * @tparam TBase base state
+ */
 template <typename THost, unsigned id,
           typename TBase = CompState<THost, 0, TopState<THost>>>
 struct CompState : TBase
 {
+    using Host = THost;
     using Base = TBase;
-    using This = CompState<THost, id, Base>;
+    using This = CompState<Host, id, Base>;
 
+    /**
+     * @brief Default event handler
+     * 
+     * @tparam T 
+     * @param host 
+     * @param x 
+     */
     template <typename T>
-    void handle(THost &host, const T &t) const
+    void handle(THost &host, const T &x) const
     {
-        Base::handle(host, t);
+        Base::handle(host, x);
     }
 
-    // no implementation
+    /**
+     * @brief Initial state transition
+     *
+     * No implementation so compiler can catch if an initial transition
+     * is not implemented
+     */
     static void initial(THost &);
 
-    static void entry(THost &) {}
+    /**
+     * @brief Default state entry handler
+     * 
+     * @param host 
+     */
+    static void entry(THost &host) {}
 
-    static void exit(THost &) {}
+    /**
+     * @brief Default state exit handler
+     * 
+     * @param host 
+     */
+    static void exit(THost &host) {}
 };
 
-// Class used for Top state
+/**
+ * @brief Composite state class for top state
+ *
+ * @tparam THost
+ */
 template <typename THost>
 struct CompState<THost, 0, TopState<THost>> : TopState<THost>
 {
-    using Base = TopState<THost>;
-    using This = CompState<THost, 0, Base>;
+    using Host = THost;
+    using Base = TopState<Host>;
+    using This = CompState<Host, 0, Base>;
 
+    /**
+     * @brief Default event handler
+     * 
+     * @tparam T 
+     * @param host 
+     * @param x 
+     */
     template <typename T>
     void handle(THost &, const T &) const {}
 
-    // no implementation
+    /**
+     * @brief Initial state transition
+     *
+     * No implementation so compiler can catch if an initial transition
+     * is not implemented
+     */
     static void initial(THost &);
 
-    static void entry(THost &) {}
+    /**
+     * @brief Default state entry handler
+     * 
+     * @param host 
+     */
+    static void entry(THost &host) {}
 
-    static void exit(THost &) {}
+    /**
+     * @brief Default state exit handler
+     * 
+     * @param host 
+     */
+    static void exit(THost &host) {}
 };
 
-// Define the leaf state
+/**
+ * @brief Leaf state class. Only leaf states have instances.
+ *
+ * @tparam THost host state machine class
+ * @tparam id unique numerical id
+ * @tparam TBase base state
+ */
 template <typename THost, unsigned id,
           typename TBase = CompState<THost, 0, TopState<THost>>>
 struct LeafState : TBase
 {
     using Host = THost;
     using Base = TBase;
-    using This = LeafState<THost, id, Base>;
+    using This = LeafState<Host, id, Base>;
 
+    /**
+     * @brief Default event handler
+     * 
+     * @tparam T 
+     * @param host 
+     * @param x 
+     */
     template <typename T>
-    void handle(THost &host, const T &t) const
+    void handle(THost &host, const T &x) const
     {
-        Base::handle(host, t);
+        Base::handle(host, x);
     }
 
-    virtual void handler(THost &host) const { handle(host, *this); }
+    /**
+     * @brief Event handler called by host
+     *
+     * @param host
+     */
+    virtual void handler(THost &host) const override { handle(host, *this); }
 
-    virtual unsigned getId() const { return id; }
+    /**
+     * @brief Get the Id object
+     *
+     * @return unsigned unique numerical id
+     */
+    virtual unsigned getId() const override { return id; }
 
-    static void initial(THost &host) { host.next(obj); }
+    /**
+     * @brief Initial transition. No specialization in required as the
+     * transition is defined for leaf nodes.
+     *
+     * @param host
+     */
+    static void initial(THost &host) { host.next(obj_); }
 
-    // don't specialize this
-    static void entry(THost &) {}
+    /**
+     * @brief Default state entry handler
+     * 
+     * @param host 
+     */
+    static void entry(THost &host) {}
 
-    static void exit(THost &) {}
+    /**
+     * @brief Default state exit handler
+     * 
+     * @param host 
+     */
+    static void exit(THost &host) {}
 
-    LeafState() {}
+    LeafState(LeafState const&) = delete;
+    LeafState& operator=(LeafState const&) = delete;
 
 private:
-    static const LeafState obj; // only the leaf states have instances
+    LeafState() = default;
+
+    static const LeafState obj_;
 };
 
+/**
+ * @brief Leaf state instance 
+ * 
+ * @tparam THost host state machine class
+ * @tparam id unique numerical id
+ * @tparam TBase base state
+ */
 template <typename THost, unsigned id, typename TBase>
-const LeafState<THost, id, TBase> LeafState<THost, id, TBase>::obj;
+const LeafState<THost, id, TBase> LeafState<THost, id, TBase>::obj_;
 
-// Transition Object, Current, Source, Target
+/**
+ * @brief Transition object
+ *
+ * @tparam TCurrent
+ * @tparam TSource
+ * @tparam TTarget
+ */
 template <typename TCurrent, typename TSource, typename TTarget>
 struct Tran
 {
@@ -120,12 +254,19 @@ struct Tran
     enum
     {
         // work out when to terminate template recursion
-        eCB_TB = std::is_base_of<CurrentBase, TargetBase>::value,
-        eCB_S = std::is_base_of<CurrentBase, TSource>::value,
-        eC_S = std::is_base_of<TCurrent, TSource>::value,
-        eS_C = std::is_base_of<TSource, TCurrent>::value,
-        exitStop = eCB_TB && eC_S,
-        entryStop = eC_S || (eCB_S && !eS_C)
+        eCB_TB = std::is_base_of<CurrentBase, TargetBase>(),
+        eCB_S = std::is_base_of<CurrentBase, TSource>(),
+        eC_S = std::is_base_of<TCurrent, TSource>(),
+        eS_C = std::is_base_of<TSource, TCurrent>(),
+
+        /*
+         * Tran now needs to walk up in the inheritance hierarchy of
+         * the current state (TCurrent) until it finds the common base class
+         * of current and target state (TCurrent and TTarget), but it must not
+         * stop before the source state (TSource) was reached.
+         */
+        exit_stop = eCB_TB && eC_S,
+        entry_stop = eC_S || (eCB_S && !eS_C)
     };
 
     // We use overloading to stop recursion.
@@ -138,47 +279,62 @@ struct Tran
     static void exitActions(Host &host, std::false_type)
     {
         TCurrent::exit(host);
-        Tran<CurrentBase, TSource, TTarget>::exitActions(host, std::bool_constant<exitStop>());
+        Tran<CurrentBase, TSource, TTarget>::exitActions(
+            host, std::bool_constant<exit_stop>());
     }
 
     static void entryActions(Host &, std::true_type) {}
 
     static void entryActions(Host &host, std::false_type)
     {
-        Tran<CurrentBase, TSource, TTarget>::entryActions(host, std::bool_constant<entryStop>());
+        Tran<CurrentBase, TSource, TTarget>::entryActions(
+            host, std::bool_constant<entry_stop>());
         TCurrent::entry(host);
     }
 
-    Tran(Host &host) : host_{host} { exitActions(host_, std::bool_constant<false>()); }
+    /**
+     * @brief Construct a new Tran object
+     * 
+     * @param host 
+     */
+    Tran(Host &host) : host_{host}
+    {
+        exitActions(host_, std::bool_constant<false>());
+    }
 
     ~Tran()
     {
-        Tran<TTarget, TSource, TTarget>::entryActions(host_, std::bool_constant<false>());
+        Tran<TTarget, TSource, TTarget>::entryActions(host_,
+                                                      std::bool_constant<false>());
         TTarget::initial(host_);
     }
 
     Host &host_;
 };
 
-// Initializer for Compound States
-template <typename T>
+/**
+ * @brief Initializer for Compound States
+ *
+ * @tparam TTarget default target
+ */
+template <typename TTarget>
 struct Initial
 {
-    using Host = typename T::Host;
+    using Host = typename TTarget::Host;
 
     Initial(Host &host) : host_{host} {}
 
     ~Initial()
     {
-        T::entry(host_);
-        T::initial(host_);
+        TTarget::entry(host_);
+        TTarget::initial(host_);
     }
 
     Host &host_;
 };
 
 template <typename T>
-class HSM
+class Hsm
 {
 public:
     const TopState<T> *state_;
