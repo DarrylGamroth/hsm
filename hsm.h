@@ -22,12 +22,12 @@ namespace hsm
 {
 
 /**
- * @brief Abstract class for top level state
+ * @brief Abstract class for state
  *
  * @tparam THost host state machine class
  */
 template <typename THost>
-struct TopState
+struct HsmState
 {
     using Host = THost;
     using Base = void;
@@ -65,7 +65,7 @@ struct CompositeState;
  * @tparam TBase base state
  */
 template <typename THost, unsigned id,
-          typename TBase = CompositeState<THost, 0, TopState<THost>>>
+          typename TBase = CompositeState<THost, 0, HsmState<THost>>>
 struct CompositeState : TBase
 {
     using Host = THost;
@@ -114,10 +114,10 @@ struct CompositeState : TBase
  * @tparam THost
  */
 template <typename THost>
-struct CompositeState<THost, 0, TopState<THost>> : TopState<THost>
+struct CompositeState<THost, 0, HsmState<THost>> : HsmState<THost>
 {
     using Host = THost;
-    using Base = TopState<Host>;
+    using Base = HsmState<Host>;
     using This = CompositeState<Host, 0, Base>;
 
     /**
@@ -161,7 +161,7 @@ struct CompositeState<THost, 0, TopState<THost>> : TopState<THost>
  * @tparam TBase base state
  */
 template <typename THost, unsigned id,
-          typename TBase = CompositeState<THost, 0, TopState<THost>>>
+          typename TBase = CompositeState<THost, 0, HsmState<THost>>>
 struct LeafState : TBase
 {
     using Host = THost;
@@ -337,9 +337,9 @@ template <typename T>
 class Hsm
 {
 public:
-    const TopState<T> *state_;
+    const HsmState<T> *state_;
 
-    void next(const TopState<T> &state) { state_ = &state; }
+    void next(const HsmState<T> &state) { state_ = &state; }
 };
 
 } // namespace hsm
