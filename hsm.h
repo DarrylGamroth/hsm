@@ -75,12 +75,12 @@ struct CompositeState : TBase
     /**
      * @brief Default event handler
      * 
-     * @tparam T 
+     * @tparam TCurrent 
      * @param host 
      * @param x 
      */
-    template <typename T>
-    void handle(THost &host, const T &x) const
+    template <typename TCurrent>
+    void handle(THost &host, const TCurrent &x) const
     {
         Base::handle(host, x);
     }
@@ -123,12 +123,12 @@ struct CompositeState<THost, 0, HsmState<THost>> : HsmState<THost>
     /**
      * @brief Default event handler
      * 
-     * @tparam T 
+     * @tparam TCurrent 
      * @param host 
      * @param x 
      */
-    template <typename T>
-    void handle(THost &, const T &) const {}
+    template <typename TCurrent>
+    void handle(THost &, const TCurrent &) const {}
 
     /**
      * @brief Initial state transition
@@ -171,12 +171,12 @@ struct LeafState : TBase
     /**
      * @brief Default event handler
      * 
-     * @tparam T 
+     * @tparam TCurrent 
      * @param host 
      * @param x 
      */
-    template <typename T>
-    void handle(THost &host, const T &x) const
+    template <typename TCurrent>
+    void handle(THost &host, const TCurrent &x) const
     {
         Base::handle(host, x);
     }
