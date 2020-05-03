@@ -254,19 +254,20 @@ struct Tran
     enum
     {
         // work out when to terminate template recursion
-        eCB_TB = std::is_base_of<CurrentBase, TargetBase>(),
         eCB_S = std::is_base_of<CurrentBase, TSource>(),
+        eCB_T = std::is_base_of<CurrentBase, TTarget>(),
+        eCB_TB = std::is_base_of<CurrentBase, TargetBase>(),
         eC_S = std::is_base_of<TCurrent, TSource>(),
-        eS_C = std::is_base_of<TSource, TCurrent>(),
+        eT_S = std::is_base_of<TTarget, TSource>(),
+        eS_T = std::is_base_of<TSource, TTarget>(),
+        e_CB_EQ_S = std::is_same<CurrentBase, TSource>(),
+        e_C_EQ_S = std::is_same<TCurrent, TSource>(),
+        e_S_EQ_T = std::is_same<TSource, TTarget>(),
 
-        /*
-         * Tran now needs to walk up in the inheritance hierarchy of
-         * the current state (TCurrent) until it finds the common base class
-         * of current and target state (TCurrent and TTarget), but it must not
-         * stop before the source state (TSource) was reached.
-         */
-        exit_stop = eCB_TB && eC_S,
-        entry_stop = eC_S || (eCB_S && !eS_C)
+        exit_stop_initial = eS_T && e_C_EQ_S && !e_S_EQ_T,
+        exit_stop = eCB_T && eCB_S && !(e_S_EQ_T && e_CB_EQ_S),
+        entry_stop_initial = eT_S && !e_S_EQ_T,
+        entry_stop = eCB_S,
     };
 
     // We use overloading to stop recursion.
@@ -299,34 +300,13 @@ struct Tran
      */
     Tran(Host &host) : host_{host}
     {
-        exitActions(host_, std::bool_constant<false>());
+        exitActions(host_, std::bool_constant<exit_stop_initial>());
     }
 
     ~Tran()
     {
-        Tran<TTarget, TSource, TTarget>::entryActions(host_,
-                                                      std::bool_constant<false>());
-        TTarget::initial(host_);
-    }
-
-    Host &host_;
-};
-
-/**
- * @brief Initializer for Compound States
- *
- * @tparam TTarget default target
- */
-template <typename TTarget>
-struct Initial
-{
-    using Host = typename TTarget::Host;
-
-    Initial(Host &host) : host_{host} {}
-
-    ~Initial()
-    {
-        TTarget::entry(host_);
+        Tran<TTarget, TSource, TTarget>::entryActions(
+            host_, std::bool_constant<entry_stop_initial>());
         TTarget::initial(host_);
     }
 
