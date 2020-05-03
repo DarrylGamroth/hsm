@@ -201,7 +201,10 @@ struct LeafState : TBase
      *
      * @param host
      */
-    static void initial(THost &host) { host.next(obj_); }
+    static void initial(THost &host)
+    {
+        host.state_ = &obj_;
+    }
 
     /**
      * @brief Default state entry handler
@@ -318,8 +321,6 @@ class Hsm
 {
 public:
     const HsmState<T> *state_;
-
-    void next(const HsmState<T> &state) { state_ = &state; }
 };
 
 } // namespace hsm
