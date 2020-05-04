@@ -296,11 +296,6 @@ struct Tran
         TCurrent::entry(host);
     }
 
-    /**
-     * @brief Construct a new Tran object
-     * 
-     * @param host 
-     */
     Tran(Host &host) : host_{host}
     {
         exitActions(host_, std::bool_constant<exit_stop_initial>());
