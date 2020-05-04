@@ -320,8 +320,22 @@ template <typename T>
 class Hsm
 {
 public:
+    /*
+     * Current leaf state 
+     */
     const HsmState<T> *state_;
 };
+
+/**
+ * @brief Macro for defining initial state transition
+ * 
+ */
+#define HSM_INITIAL(HOST, STATE, INITSTATE) \
+    template <>                             \
+    inline void STATE::initial(HOST &h)     \
+    {                                       \
+        Tran<This, This, INITSTATE> t(h);   \
+    }
 
 } // namespace hsm
 #endif // HSM_HPP
