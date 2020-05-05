@@ -259,15 +259,10 @@ struct Tran
         // work out when to terminate template recursion
         eCB_S = std::is_base_of<CurrentBase, TSource>(),
         eCB_T = std::is_base_of<CurrentBase, TTarget>(),
-        eCB_TB = std::is_base_of<CurrentBase, TargetBase>(),
-        eC_S = std::is_base_of<TCurrent, TSource>(),
         eT_S = std::is_base_of<TTarget, TSource>(),
-        eS_T = std::is_base_of<TSource, TTarget>(),
         e_CB_EQ_S = std::is_same<CurrentBase, TSource>(),
-        e_C_EQ_S = std::is_same<TCurrent, TSource>(),
         e_S_EQ_T = std::is_same<TSource, TTarget>(),
 
-        exit_stop_initial = eS_T && e_C_EQ_S && !e_S_EQ_T,
         exit_stop = eCB_T && eCB_S && !(e_S_EQ_T && e_CB_EQ_S),
         entry_stop_initial = eT_S && !e_S_EQ_T,
         entry_stop = eCB_S,
@@ -298,13 +293,59 @@ struct Tran
 
     Tran(Host &host) : host_{host}
     {
-        exitActions(host_, std::bool_constant<exit_stop_initial>());
+        exitActions(host_, std::bool_constant<false>());
     }
 
     ~Tran()
     {
         Tran<TTarget, TSource, TTarget>::entryActions(
             host_, std::bool_constant<entry_stop_initial>());
+        TTarget::initial(host_);
+    }
+
+    Host &host_;
+};
+
+/**
+ * @brief   Initial transition object
+ *
+ * @tparam TCurrent
+ * @tparam TSource
+ * @tparam TTarget
+ */
+template <typename TCurrent, typename TSource, typename TTarget>
+struct InitialTran
+{
+    using Host = typename TCurrent::Host;
+    using CurrentBase = typename TCurrent::Base;
+    using SourceBase = typename TSource::Base;
+    using TargetBase = typename TTarget::Base;
+
+    enum
+    {
+        // work out when to terminate template recursion
+        e_CB_EQ_S = std::is_same<CurrentBase, TSource>(),
+
+        entry_stop = e_CB_EQ_S,
+    };
+
+    static void entryActions(Host &, std::true_type) {}
+
+    static void entryActions(Host &host, std::false_type)
+    {
+        InitialTran<CurrentBase, TSource, TTarget>::entryActions(
+            host, std::bool_constant<entry_stop>());
+        TCurrent::entry(host);
+    }
+
+    InitialTran(Host &host) : host_{host}
+    {
+    }
+
+    ~InitialTran()
+    {
+        InitialTran<TTarget, TSource, TTarget>::entryActions(
+            host_, std::bool_constant<false>());
         TTarget::initial(host_);
     }
 
@@ -325,11 +366,11 @@ public:
  * @brief Macro for defining initial state transition
  * 
  */
-#define HSM_INITIAL(HOST, STATE, INITSTATE) \
-    template <>                             \
-    inline void STATE::initial(HOST &h)     \
-    {                                       \
-        Tran<This, This, INITSTATE> t(h);   \
+#define HSM_INITIAL(HOST, STATE, INITSTATE)      \
+    template <>                                  \
+    inline void STATE::initial(HOST &h)          \
+    {                                            \
+        InitialTran<This, This, INITSTATE> t(h); \
     }
 
 } // namespace hsm
