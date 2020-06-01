@@ -257,15 +257,19 @@ struct Tran
     enum
     {
         // work out when to terminate template recursion
+        eCB_TB = std::is_base_of<CurrentBase, TargetBase>(),
         eCB_S = std::is_base_of<CurrentBase, TSource>(),
-        eCB_T = std::is_base_of<CurrentBase, TTarget>(),
-        eT_S = std::is_base_of<TTarget, TSource>(),
-        e_CB_EQ_S = std::is_same<CurrentBase, TSource>(),
-        e_S_EQ_T = std::is_same<TSource, TTarget>(),
+        eC_S = std::is_base_of<TCurrent, TSource>(),
+        eS_C = std::is_base_of<TSource, TCurrent>(),
 
-        exit_stop = eCB_T && eCB_S && !(e_S_EQ_T && e_CB_EQ_S),
-        entry_stop_initial = eT_S && !e_S_EQ_T,
-        entry_stop = eCB_S,
+        /*
+         * Tran now needs to walk up in the inheritance hierarchy of
+         * the current state (TCurrent) until it finds the common base class
+         * of current and target state (TCurrent and TTarget), but it must not
+         * stop before the source state (TSource) was reached.
+         */
+        exit_stop = eCB_TB && eC_S,
+        entry_stop = eC_S || (eCB_S && !eS_C)
     };
 
     // We use overloading to stop recursion.
@@ -291,6 +295,11 @@ struct Tran
         TCurrent::entry(host);
     }
 
+    /**
+     * @brief Construct a new Tran object
+     * 
+     * @param host 
+     */
     Tran(Host &host) : host_{host}
     {
         exitActions(host_, std::bool_constant<false>());
@@ -298,8 +307,74 @@ struct Tran
 
     ~Tran()
     {
-        Tran<TTarget, TSource, TTarget>::entryActions(
-            host_, std::bool_constant<entry_stop_initial>());
+        Tran<TTarget, TSource, TTarget>::entryActions(host_,
+                                                      std::bool_constant<false>());
+        TTarget::initial(host_);
+    }
+
+    Host &host_;
+};
+
+/**
+ * @brief Local Transition object
+ *
+ * @tparam TCurrent
+ * @tparam TSource
+ * @tparam TTarget
+ */
+template <typename TCurrent, typename TSource, typename TTarget>
+struct LocalTran
+{
+    using Host = typename TCurrent::Host;
+    using CurrentBase = typename TCurrent::Base;
+    using SourceBase = typename TSource::Base;
+    using TargetBase = typename TTarget::Base;
+
+    enum
+    {
+        // work out when to terminate template recursion
+        eCB_S = std::is_base_of<CurrentBase, TSource>(),
+        eCB_T = std::is_base_of<CurrentBase, TTarget>(),
+        eT_S = std::is_base_of<TTarget, TSource>(),
+        e_CB_EQ_S = std::is_same<CurrentBase, TSource>(),
+        e_S_EQ_T = std::is_same<TSource, TTarget>(),
+
+        exit_stop = eCB_T && eCB_S && !(e_S_EQ_T && e_CB_EQ_S),
+        entry_stop = eCB_S,
+    };
+
+    // We use overloading to stop recursion.
+    // The more natural template specialization
+    // method would require to specialize the inner
+    // template without specializing the outer one,
+    // which is forbidden.
+    static void exitActions(Host &, std::true_type) {}
+
+    static void exitActions(Host &host, std::false_type)
+    {
+        TCurrent::exit(host);
+        LocalTran<CurrentBase, TSource, TTarget>::exitActions(
+            host, std::bool_constant<exit_stop>());
+    }
+
+    static void entryActions(Host &, std::true_type) {}
+
+    static void entryActions(Host &host, std::false_type)
+    {
+        LocalTran<CurrentBase, TSource, TTarget>::entryActions(
+            host, std::bool_constant<entry_stop>());
+        TCurrent::entry(host);
+    }
+
+    LocalTran(Host &host) : host_{host}
+    {
+        exitActions(host_, std::bool_constant<false>());
+    }
+
+    ~LocalTran()
+    {
+        LocalTran<TTarget, TSource, TTarget>::entryActions(
+            host_, std::bool_constant<false>());
         TTarget::initial(host_);
     }
 
