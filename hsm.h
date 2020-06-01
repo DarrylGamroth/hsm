@@ -1,7 +1,7 @@
 #ifndef HSM_HPP
 #define HSM_HPP
 
-// This code is from:
+// This code is based on code from:
 // Yet Another Hierarchical State Machine
 // by Stefan Heinzmann
 // Overload issue 64 December 2004
@@ -325,7 +325,6 @@ struct InitialTran
     {
         // work out when to terminate template recursion
         e_CB_EQ_S = std::is_same<CurrentBase, TSource>(),
-
         entry_stop = e_CB_EQ_S,
     };
 
